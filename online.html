@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zip online, unzip, unrar, rar, extract online, B1, uncompress files, archive</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="Description" content="Zip, unzip, rar files online. Extract files from archive online, no installation, safe and free. Unzip, unrar decompression in cloud. Uncompress, unzipping tool">
+    <meta name="Keywords" content="zip online, unzip online, extract files, uncompress, rar, unrar online, archive, tool, decompression, unarchiver, zip, .zip file, rar, b1, 7z, tool">
+    <link rel="canonical" href="http://b1.org/online"/>
+    <link href="/css/main.css?v=97" rel="stylesheet" />
+<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+<link href='//fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script type="text/javascript" src="/js/jquery.parallax-1.1.3.js"></script>
+<script type="text/javascript" src="/js/SmoothScroll.js"></script>
+<script type="text/javascript">
+
+    $(document).ready(function(){
+        $('.container_bg').parallax("100%", 3);
+        $('.wrapper_bg').parallax("100%", 3);
+        $('.wrapper_bg_download').parallax("100%", 3);
+        $('.wrapper_bg_help').parallax("100%", 3);
+        $('.award_bg').parallax("100%", 3);
+        $('.award-rewies').parallax("50%", 3);
+        $('.new-wrap').parallax("50%", 3);
+    });
+
+    $(document).ready(function(){
+        $('a.smoothscroll').bind('click.smoothscroll',function (e) {
+            e.preventDefault();
+            var target = this.hash, $target = $(target);
+            $('html, body').stop().animate({
+                'scrollTop': $target.offset().top
+            }, 900, 'swing', function () {
+                window.location.hash = target;
+            });
+        });
+
+    });
+
+    $(function() {
+        $.fn.scrollToTop = function() {
+            $(this).hide().removeAttr("href");
+            if ($(window).scrollTop() >= "250") $(this).fadeIn("slow")
+            var scrollDiv = $(this);
+            $(window).scroll(function() {
+                if ($(window).scrollTop() <= "250") $(scrollDiv).fadeOut("slow")
+                else $(scrollDiv).fadeIn("slow")
+            });
+            $(this).click(function() {
+                $("html, body").animate({scrollTop: 0}, "slow")
+            })
+        }
+    });
+
+    $(function() {
+        $("#Go_Top").scrollToTop();
+    });
+
+    if(location.pathname.match(/^\/online$/)) {
+        window.addEventListener("load",function(){
+            window.addEventListener("scroll",function(e){
+                if(this.scrollY > 200) document.getElementsByClassName("mainContainer")[0].classList.add("__scroll")
+                else  document.getElementsByClassName("mainContainer")[0].classList.remove("__scroll");
+            });
+        });
+    }
+
+</script>
+
+<!--[if gte IE 9]>
+<style type="text/css">
+.grad {
+    filter: none;
+}
+</style>
+<![endif]--><link rel="stylesheet" href="/css/styles.css?v=9"/>
+    <script type="text/javascript" src="js/underscore-min.js"></script>
+    <link rel="stylesheet" href="colorbox/colorbox.css"/>
+    <script type="text/javascript" src="colorbox/jquery.colorbox-fixed.js"></script>
+
+
+    <!--[if lte IE 8]>
+    <style type="text/css">
+        .bgRow {
+            background: #f1f5f6;
+        }
+
+        .downloadList li.bg, .zebra .item.bg {
+            background: #f1f5f6;
+        }
+
+        .innerContentOnline table tr:hover {
+            background: #e0e8eb;
+        }
+
+        .itemIconDownload, .itemIconPlay, .itemIconViewImage, .itemIconPlayAudio {
+            background: url(/images/online_archive_icons_sprite_IE.gif) no-repeat;
+            background-position: center -112px;
+        }
+
+        .itemIconPlay {
+            margin-right: 5px;
+            background-position: center -128px;
+        }
+
+        .itemIconViewImage {
+            margin-right: 5px;
+            background-position: center -144px;
+        }
+
+        .itemIconPlayAudio {
+            margin-right: 5px;
+            background-position: center -160px;
+        }
+    </style>
+    <![endif]-->
+    <script type="text/javascript">
+    _.templateSettings = {
+        evaluate: /\[%([\s\S]+?)%\]/g,
+        interpolate: /\[%=([\s\S]+?)%\]/g,
+        escape: /\[%-([\s\S]+?)%\]/g,
+        variable: "context"
+    };
+
+    $(document).ready(function () {
+        var ajaxUpload = window.FormData && window.XMLHttpRequest && new XMLHttpRequest()['upload'];
+        var videoElement = document.getElementById("video");
+        var audioElement = document.getElementById("audio");
+        var hiddenIframe = document.getElementById("hiddenIframe");
+        var imageTypes = _(['gif', 'jpeg', 'jpg', 'png', 'bmp', 'ico']);
+        var imgTypes = _(['gif', 'jpeg', 'jpg', 'png']);
+        var textTypes = _(['doc', 'txt', 'rtf', 'docx', 'odt', 'xls', 'xlsx']);
+        var debug = document.location.hash == "#debug" && console !== undefined && console.log !== undefined;
+        var views = ["#selectView", "#uploadView", "#extractView", "#errorView", "#passwordView", "#listView", "#cleanupView"];
+        var digitGroupRegex = /(\d+)(\d{3})/;
+        var templates = {};
+        var eventCount = {};
+        var currentListing;
+        var uploadInProgress;
+        var bookmarkShortcut;
+        var jqueryRequest;
+        var xhr;
+
+        function safeEncodeURIComponent(uriComponent) {
+            return encodeURIComponent(uriComponent).replace("'", "%27");
+        }
+
+        function purge(element) {
+            if (element.pause) element.pause();
+            element.removeAttribute("src");
+            if (element.load) element.load();
+        }
+
+        $(document).bind('cbox_purge', function () {
+            purge(videoElement);
+            purge(audioElement);
+        });
+
+        _(views).each(function (view) {
+            var script = $(view + " > script[type='text/x-template']");
+            templates[view] = _.template(script.html());
+            $(view).html("");
+        });
+
+        if (window.sidebar && window.sidebar.addPanel) {
+            window.addBookmark = function (link) {
+                window.sidebar.addPanel(link.title, link.href, "");
+            };
+        } else if (window.external && typeof window.external.AddFavorite !== 'undefined') {
+            window.addBookmark = function (link) {
+                window.external.AddFavorite(link.href, link.title);
+            };
+        } else {
+            bookmarkShortcut = navigator.appVersion.indexOf("Mac") != -1 ? "Cmd+" : "Ctrl+";
+            bookmarkShortcut += /(konqueror)|(rekonq)/.test(navigator.userAgent.toLowerCase()) ? "B" : "D";
+        }
+
+        function trackEvent(label, opt_value, opt_limit) {
+            if (opt_limit !== undefined) {
+                var key = label + "#" + opt_value;
+                var count = eventCount[key] || 0;
+                if (count > opt_limit) return;
+                eventCount[key] = count + 1;
+            }
+            var event = ['_trackEvent', 'onlinearch', label];
+            if (opt_value !== undefined) event.push(opt_value);
+            if (debug) console.log(event);
+            window['_gaq'].push(event);
+        }
+
+        function showView(view, context) {
+            _(views).each(function (view) {
+                $(view).hide();
+            });
+            $(view).html(templates[view](context || {}));
+            $(view).show();
+            var e = document.querySelector("#adInListing");
+            if (e) {
+                if (view == "#listView") {
+                    e.style.display = "block";
+                    if (!window.adInListingOnce) {
+                        window.adInListingOnce = true;
+                        if (!(window.EpmadsConfig && window.EpmadsConfig.ads)) window.EpmadsConfig = {ads: []};
+                        EpmadsConfig.ads.push({
+                            epmads_key: "64c0f01e19805bfdda1e4f83424bd264",
+                            epmads_channel: "",
+                            epmads_code_format: "ads-async.js",
+                            epmads_click: "",
+                            epmads_custom_params: {},
+                            epmads_target_id: "epmads-64c0f01e19805bfdda1e4f83424bd264"
+                        });
+                        (function () {
+                            var sc = document.createElement("script");
+                            sc.type = "text/javascript";
+                            sc.async = true;
+                            sc.src = (location.protocol == "https:" ? "https:" : "http:") + "//www.multilinkhost.com\/js\/show_ads_epmads.js?pubId=28692";
+                            var s = document.getElementsByTagName("script")[0];
+                            s.parentNode.insertBefore(sc, s);
+                        })();
+                    }
+                } else {
+                    e.style.display = "none";
+                }
+            }
+        }
+
+        function setType(object, item) {
+            if (object.children !== undefined) {
+                item.type = "Folder";
+                return;
+            }
+            var mime = object['mime'];
+            if (mime && mime.lastIndexOf("audio/", 0) == 0) {
+                item.type = "Audio";
+                item.audioPreview = audioElement.canPlayType && audioElement.canPlayType(mime);
+                return;
+            }
+            if (mime && mime.lastIndexOf("video/", 0) == 0) {
+                item.type = "Video";
+                item.videoPreview = videoElement.canPlayType && videoElement.canPlayType(mime);
+                return;
+            }
+            var name = object.name.toLowerCase();
+            var dotIndex = name.lastIndexOf('.');
+            if (dotIndex >= 0) {
+                var ext = name.substring(dotIndex + 1);
+                if (imageTypes.contains(ext)) {
+                    item.type = "Image";
+                    item.imagePreview = imgTypes.contains(ext);
+                    return;
+                }
+                if (textTypes.contains(ext)) {
+                    item.type = "TextFile";
+                    return;
+                }
+                if (ext == 'pdf') {
+                    item.type = "PDF";
+                    return;
+                }
+            }
+            item.type = "File";
+        }
+
+        function formatSize(size) {
+            size += "";
+            while (digitGroupRegex.test(size)) {
+                size = size.replace(digitGroupRegex, '$1' + ',' + '$2');
+            }
+            return size;
+        }
+
+        function cancelAjax() {
+            uploadInProgress = false;
+            if (jqueryRequest) {
+                jqueryRequest.abort();
+                jqueryRequest = undefined;
+            }
+            if (xhr) {
+                xhr.abort();
+                xhr = undefined;
+            }
+            try {
+                var contentWindow = hiddenIframe.contentWindow;
+                if (contentWindow.stop) {
+                    contentWindow.stop();
+                } else {
+                    contentWindow.document.execCommand('Stop');
+                }
+            } catch (e) {
+                // ignore errors
+            }
+            hiddenIframe.src = "javascript:void(0);";
+        }
+
+        function submitAjaxForm(form) {
+            $(hiddenIframe).replaceWith("<iframe id='hiddenIframe' name='hiddenIframe' width='0' height='0'></iframe>");
+            hiddenIframe = document.getElementById("hiddenIframe");
+            xhr = new XMLHttpRequest();
+            var upload = xhr['upload'];
+            upload.onprogress = function (e) {
+                if (e['lengthComputable']) {
+                    var loaded = e['loaded'];
+                    var total = e['total'];
+                    if (total - loaded > 65536) {
+                        $("#progress").text(Math.round(loaded / total * 90) + "%");
+                        return;
+                    }
+                }
+                showView('#extractView');
+                upload.onprogress = null;
+                upload.onload = null;
+            };
+            upload.onload = function (e) {
+                showView('#extractView');
+            };
+            xhr.onload = function () {
+                if (xhr.status == 200) {
+                    var doc = hiddenIframe.contentWindow.document;
+                    doc.open();
+                    doc.write(xhr.responseText);
+                    doc.close();
+                } else {
+                    window.onIframeLoad();
+                }
+            };
+            xhr.onerror = xhr.onabort = window.onIframeLoad;
+            xhr.open('POST', form.action, true);
+            xhr.send(new FormData(form));
+        }
+
+        window.showSelectView = function () {
+            cancelAjax();
+            showView('#selectView');
+            trackEvent('repeat', 'browse');
+        };
+
+        window.onFileDialog = function () {
+            cancelAjax();
+            trackEvent('start', 'upload');
+        };
+
+        window.startUpload = function (fileInput) {
+            uploadInProgress = true;
+            var files = fileInput.files;
+            if (files && files.length) {
+                var file = files[0];
+                var name = file.name || "";
+                var ext = name.substring(name.lastIndexOf(".") + 1);
+                if (!/^(b1|zip|jar|xpi|rar|7z|arj|bz2|bzip2|tbz2|tbz|txz|cab|chm|chi|chq|chw|hxs|hxi|hxr|hxq|hxw|lit|cpio|deb|gz|gzip|tgz|tpz|hfs|iso|lzh|lha|lzma|lzma86|rpm|tar|xar|z|taz|xz|dmg|cb7|cbr|cbt|cbz)$/i.test(ext)) {
+                    showErrorView({
+                        message: "Archive type not supported:",
+                        fileName: file.name
+                    });
+                    trackEvent('error_client', 'extension');
+                    return;
+                }
+                
+                if (file.size && file.size > 629145600) {
+                    showErrorView({
+                        message: "The file is too large, you can only upload files smaller than 600 MB"
+                    });
+                    trackEvent('error_client', 'size');
+                    return;
+                }
+                
+                trackEvent('filetype', ext);
+            }
+            if (ajaxUpload) {
+                submitAjaxForm(fileInput.form);
+                showView('#uploadView');
+            } else {
+                fileInput.form.submit();
+                showView('#extractView');
+            }
+            trackEvent('progress', 'upload');
+        };
+
+        window.onPasswordSent = function (form) {
+            uploadInProgress = true;
+            showView('#extractView');
+        };
+
+        window.uploadComplete = function (result) {
+            cancelAjax();
+            var passwordPresent = result['passwordPresent'];
+            if (!passwordPresent) {
+                trackEvent('finished', 'upload');
+            }
+            uploadInProgress = false;
+            currentListing = result['listing'];
+            if (currentListing !== undefined) {
+                showListView();
+                trackEvent('start', 'browse');
+            } else if (result['encryptedFileName'] !== undefined) {
+                cancelAjax();
+                if (passwordPresent) {
+                    trackEvent('password_wrong', 'upload');
+                } else {
+                    trackEvent('password', 'upload');
+                }
+                showView('#passwordView', result);
+            } else {
+                showErrorView(result);
+                var suffix = result.message == 'IOException' ? '_io' : result.message == 'SocketTimeoutException' ? '_st' : '';
+                trackEvent('error_server' + suffix, result['phase']);
+            }
+        };
+
+        window.showErrorView = function (context) {
+            cancelAjax();
+            showView('#errorView', context || {});
+        };
+
+        window.onIframeLoad = function () {
+            if (uploadInProgress) {
+                showErrorView();
+                trackEvent('error_client', 'upload');
+            }
+        };
+
+        window.onVideoMetadataLoad = function (video) {
+            $.colorbox.resize({
+                innerWidth: video.videoWidth,
+                innerHeight: video.videoHeight
+            });
+        };
+
+        window.showListView = function (path) {
+            if (path) {
+                trackEvent('progress', 'browse', 50);
+            } else {
+                path = safeEncodeURIComponent(currentListing.name);
+            }
+            var names = _(path.split("/")).map(function (name) {
+                return decodeURIComponent(name);
+            });
+            var context = {
+                items: [],
+                breadcrumbs: []
+            };
+            var objects = [currentListing];
+            _(names).each(function (name) {
+                objects = _(objects).find(
+                        function (item) {
+                            return item.name == name;
+                        }).children;
+            });
+            _(objects).each(function (object) {
+                var item = {
+                    name: object.name,
+                    path: path + '/' + safeEncodeURIComponent(object.name)
+                };
+                setType(object, item);
+                if (object.children === undefined) {
+                    item.size = formatSize(object.size);
+                    item.displaySize = object.displaySize;
+                }
+                context.items.push(item);
+            });
+            context.currentBreadcrumbName = names.pop().substring(0, 50);
+            path = "";
+            _(names).each(function (name) {
+                if (path) path += '/';
+                path += safeEncodeURIComponent(name);
+                context.breadcrumbs.push({
+                    name: name.substring(0, 50),
+                    path: path
+                });
+            });
+            showView("#listView", context);
+            $(".innerContentOnline table tr").hover(function () {
+                $(".rightColumn a", this).stop().animate({"opacity": 1});
+            }, function () {
+                $(".rightColumn a", this).stop().animate({"opacity": 0.5});
+            });
+            var colorboxOptions = {
+                rel: "gallery",
+                current: "",
+                title: function () {
+                    return this.getAttribute("data-title");
+                },
+                minWidth: 150
+            };
+            $("a.itemIconViewImage").colorbox(colorboxOptions);
+            $("a.itemIconPlay").colorbox($.extend({
+                scrolling: false,
+                inline: true,
+                href: "#video",
+                onLoad: function () {
+                    videoElement.setAttribute("src", this.href);
+                }
+            }, colorboxOptions));
+            $("a.itemIconPlayAudio").colorbox($.extend({
+                inline: true,
+                href: "#audio",
+                onLoad: function () {
+                    audioElement.setAttribute("src", this.href);
+                }
+            }, colorboxOptions));
+        };
+
+        window.onDownload = function () {
+            trackEvent('start', 'download', 50);
+        };
+
+        window.onPreview = function (type) {
+            trackEvent('start', type, 50);
+        };
+
+        window.startDeletion = function () {
+            trackEvent('start', 'removefiles');
+            cancelAjax();
+            showView("#cleanupView", {
+                deletionInProgress: true
+            });
+            jqueryRequest = $['post']("rest/online/cleanup").error(showErrorView).success(function () {
+                showView("#cleanupView", {
+                    deletionComplete: true,
+                    bookmarkShortcut: bookmarkShortcut
+                });
+            });
+        };
+
+        trackEvent('init');
+        showView('#selectView');
+    });
+    </script>
+</head>
+<body>
+<div class="wrapper">
+<div style="display: none;">
+    <video id="video" controls="controls" onloadedmetadata="onVideoMetadataLoad(this)"></video>
+    <audio id="audio" controls="controls" autoplay="autoplay"></audio>
+    <iframe id="hiddenIframe" name="hiddenIframe" width="0" height="0"
+            onload="if (window.onIframeLoad) onIframeLoad()"></iframe>
+</div>
+    <div class="wrapper_bg_help">
+        <div id="wrapper_header">
+        <div class="header">
+            <header>
+                 <a href="/" class="logoImage">Free Archiver</a>
+            </header>
+        </div>
+        <div id="navigation">
+            <nav>
+                <ul>
+                    <li><a  href="/">Home</a></li>
+                    <li><a  href="/screenshots.jsp">Screenshots</a></li>
+                    <li><a  href="/awards.jsp">Reviews</a></li>
+                    <li><a  href="/download.jsp">Download </a></li>
+                    <li><a class="active" href="https://online.b1.org/online">Online archiver</a></li>
+                    <li><a  href="/help.jsp">Help</a></li>
+<li><a  href="/support.jsp">Support</a></li>
+                </ul>
+            </nav>
+        </div>
+        </div>
+
+
+<div class="mainContainer">
+            <div class="facebook_like">
+    <div class="fb-like" data-href="https://www.facebook.com/b1archiver" data-send="false"
+         data-layout="button_count" data-show-faces="false" data-font="lucida grande"></div>
+    <div id="fb-root"></div>
+    <script>
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=326750177396514";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+</div>
+<div class="inner_landing online_landing">
+                <h1 class="landing_head">B1 Online Archiver</h1>
+                <p>The simplest way to extract files from b1, zip, rar, 7z and other archives</p>
+            </div>
+            <div class="adxcontainer">
+<!-- BEGIN TAG - HEAD -->
+    <script type="text/javascript">
+        /*<![CDATA[*/
+        if(!(window.EpmadsConfig && window.EpmadsConfig.ads)) window.EpmadsConfig = {ads:[]};
+        EpmadsConfig.ads.push({
+            epmads_key:"4e60cfc116bb1f44fba3239cff519247",
+            epmads_channel: "",
+            epmads_code_format:"ads-async.js",
+            epmads_click:"",
+            epmads_custom_params:{},
+            epmads_target_id:"epmads-4e60cfc116bb1f44fba3239cff519247-728x90"
+        });
+        (function () {
+            var sc = document.createElement("script");
+            sc.type = "text/javascript";
+            sc.async = true;
+            sc.src = (location.protocol == "https:" ? "https:" : "http:") + "//www.multilinkhost.com\/js\/show_ads_epmads.js?pubId=27309";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(sc, s);
+        })();
+        /*]]>*/
+    </script>
+    <!-- END TAG - HEAD -->
+    <!-- BEGIN TAG - BODY -->
+    <div id="epmads-4e60cfc116bb1f44fba3239cff519247-728x90"></div>
+    <!-- END TAG - BODY -->
+            </div>
+        </div>
+    </div>
+    <div id="google_translate_element"></div>
+<script>
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            multilanguagePage: true,
+            gaTrack: true,
+            gaId: 'UA-27910806-1',
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+    }
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script><div class="inner_bg">
+
+    <div class="content-online">
+    <div id="adInListing">
+        <div id="epmads-64c0f01e19805bfdda1e4f83424bd264"></div>
+    </div>
+    <div id="selectView" style="display: none;" class="innerContentOnline">
+        <script type="text/x-template">
+            <form action="rest/online/upload" method="post" enctype="multipart/form-data" target="hiddenIframe"
+                  class="innerContentOnlineForm">
+                <div class="innerContentOnlineSteps inner-gbh clear">
+                    <ul>
+                        <li class="currentStep online-all left">
+                            <a class="selectArchiveButton" href="javascript:void(0);">
+                                <input name="file" type="file" class="downloadButtonInput2" onchange="startUpload(this)"
+                                       onclick="onFileDialog()">
+                                <span class="on-main on_s"></span>
+                                <span class="onl-text">Select archive</span>
+                            </a>
+                        </li>
+                        <li class="left extract-btn">
+                            <div class="on-main on_e"></div>
+                            <span class="select-txt-e">Extracting...</span>
+                        </li>
+                        <li class="left extract-btn">
+                            <span class="on-main on_f"></span>
+                            <span class="select-txt-e">Your files</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="article-download">
+                    <p class="desc">
+                        <a href="javascript:void(0);"><input type="file" name="file" onchange="startUpload(this)" onclick="onFileDialog()" />"Select an archive"</a>
+                         from your computer, wait a few moments, <br/>then browse through the files, and download or preview only the files you need </p>
+                        <div class="click-btn-wrap">
+                            <div class="click-butt">
+                                <span> Click here</span>
+                                <input type="file" name="file" onchange="startUpload(this)"
+                                       onclick="onFileDialog()" />
+                                <span>to select an archive from your computer</span>
+                            </div>
+                        </div>
+                </div>
+                    <div class="online-bottom inner-gbh">
+                        <div class="item-block">
+                            <span class="on-main on_itm"></span>
+                            Supported formats
+                            <span class="online-corner"></span>
+                        </div>
+                        <div class="online-formats notranslate">
+                            <p> b1, zip, jar, xpi, rar, 7z, arj, bz2, bzip2, tbz2, tbz, txz, cab, chm, chi, chq, chw, hxs, hxi, hxr, hxq,<br /> hxw, lit, cpio, deb, gz, gzip, tgz, tpz, hfs, iso, lzh, lha, lzma, rpm, tar, xar, z, taz, xz, dmg, cb7, cbr,<br /> cbt, cbz</p>
+                        </div>
+                    </div>
+            </form>
+        </script>
+    </div>
+
+    <div id="uploadView" style="display: none;" class="innerContentOnline">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps inner-gbh clear">
+                <ul>
+                    <li class="left">
+                        <div class="select-btn-file sel__f">
+                            <span class="on-main on_sf on_sf1"></span>
+                            <span class="select-txtf">Select archive</span>
+                        </div>
+                    </li>
+                    <li class="left">
+                        <div class="file-btn-f">
+                            <span class="on-main on_ef on_ef1"></span>
+                            <span class="select-txt-extract">Extracting</span>
+                            <div class="loader"></div>
+                        </div>
+                    </li>
+                    <li class="left extract-btn">
+                        <span class="on-main on_f"></span>
+                        <span class="select-txt-e">Your files</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="zebra article-download">
+                <div class="bg">
+                    <p>Wait a few moments...<span id="progress"></span></p>
+                    <img src="img/gif2.gif" class="extractingLoader"/>
+                    <!--<img src="images/pb-loader.gif" class="extractingLoaderPB"/>-->
+                    <ul class="innerContentOnlineStepsLinks">
+                        <li class="floatLeft"><a href="javascript:void(0);" onclick="showSelectView()" class="listViewBackLink">Forget it, let's try another
+                            archive</a></li>
+                    </ul>
+                </div>
+            </div>
+        </script>
+    </div>
+
+    <div id="extractView" style="display: none;" class="innerContentOnline">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps inner-gbh">
+                <ul class="clear">
+                    <li class="left">
+                        <div class="select-btn-file sel__f">
+                            <span class="on-main on_sf on_sf1"></span>
+                            <span class="select-txtf">Select archive</span>
+                        </div>
+                    </li>
+                    <li class="left">
+                        <div class="file-btn-f">
+                            <span class="on-main on_ef on_ef1"></span>
+                            <span class="select-txt-extract">Extracting</span>
+                            <div class="loader"></div>
+                        </div>
+                    </li>
+                    <li class="left extract-btn">
+                        <span class="on-main on_f"></span>
+                        <span class="select-txt-e">Your files</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="art-border">
+                <div class="bg">
+                    <img src="img/gif2.gif"/>
+                </div>
+            </div>
+        </script>
+    </div>
+
+    <div id="errorView" style="display: none;" class="innerContentOnline">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps inner-gbh clear">
+                <ul>
+                    <li class="currentStep online-all left">
+                        <a class="selectArchiveButton" href="javascript:void(0);" onclick="showSelectView()">
+                            <span class="on-main on_s"></span>
+                            <span class="onl-text">Select archive</span>
+                        </a>
+                    </li>
+                    <li class="left extract-btn">
+                        <div class="on-main on_e"></div>
+                        <span class="select-txt-e">Extracting...</span>
+                    </li>
+                    <li class="left extract-btn">
+                        <span class="on-main on_f"></span>
+                        <span class="select-txt-e">Your files</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="zebra article-download">
+                <div class="bg bg1">
+                    <p>An error has occured. The files cannot be extracted.</p>
+
+                    <ul class="innerContentOnlineStepsLinks l2" style="margin:80px 0 12px 14px;">
+                        <li class="floatLeft"><a href="javascript:void(0);" onclick="showSelectView()" class="listViewBackLink list__view">Forget it, let's try another
+                            archive</a></li>
+                    </ul>
+                </div>
+            </div>
+        </script>
+    </div>
+
+    <div id="passwordView" style="display: none;" class="innerContentOnline">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps inner-gbh clear">
+                <ul>
+                    <li class="currentStep online-all left">
+                        <a class="selectArchiveButton" href="javascript:void(0);">
+                            <input name="file" type="file" class="downloadButtonInput2" onchange="startUpload(this)"
+                                   onclick="onFileDialog()">
+                            <span class="on-main on_s"></span>
+                            <span class="onl-text">Select archive</span>
+                        </a>
+                    </li>
+                    <li class="left extract-btn">
+                        <div class="on-main on_e"></div>
+                        <span class="select-txt-e">Extracting...</span>
+                    </li>
+                    <li class="left extract-btn">
+                        <span class="on-main on_f"></span>
+                        <span class="select-txt-e">Your files</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="zebra article-download">
+                <div class="bg">
+                    <p style="margin:50px 0 10px 0; line-height: 22px;">This archive is password-protected.<br/>
+                        You need to know the password to open it.
+                    </p>
+                <span>If you don't know the password, please ask the author of the archive. <br/> <a
+                        href="http://b1.org/help/Where-can-I-get-the-password-to-the-archive.jsp" target="_blank" class="dl__mm1">Where can I get the password?</a></span>
+                    [% if (context.message) { %]
+                    <span class="incorrectPassword">[%- context.message %]</span>
+                    [% } %]
+                    <br/>
+
+                    <form action="rest/online/extract" method="post" target="hiddenIframe"
+                          class="innerContentOnlineForm passwordAreaForm" onsubmit="window.onPasswordSent(); return true;">
+                        <input type="hidden" name="fileName" value="[%- context.encryptedFileName %]"/>
+                        <input type="password" class="passwordArea" name="password" placeholder="Enter password here..."/>
+                        <input class="continueButton grad" type="submit" value="Continue"/>
+                    </form>
+                    <ul class="innerContentOnlineStepsLinks">
+                        <li class="floatLeft"><a href="javascript:void(0);" onclick="showSelectView()" class="listViewBackLink list__view">Forget it, let's try another
+                            archive</a></li>
+                    </ul>
+                </div>
+            </div>
+        </script>
+    </div>
+
+    <div id="listView" style="display: block;" class="innerContentOnline">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps">
+                <div class="innerContentOnlineSteps inner-gbh clear">
+                    <ul>
+                        <li class="left">
+                            <div class="select-btn-file sel__f">
+                                <span class="on-main on_sf on_sf1"></span>
+                                <span class="select-txtf">Select archive</span>
+                            </div>
+                        </li>
+                        <li class="left extract-btn">
+                            <div class="on-main on_e"></div>
+                            <span class="select-txt-e">Extracting...</span>
+                        </li>
+                        <li class="left">
+                            <div class="file-btn-f">
+                                <span class="on-main on_ef on_ef1"></span>
+                                <span class="select-txt-extract">Your files</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="list__wrap">
+            <div class="breadcrumbs notranslate inner-gbh">
+                <ul>
+                    <li class="on-main on_dir">
+
+                    </li>
+                    [% _(context.breadcrumbs).each(function(breadcrumb) { %]
+                    <li class="p-rel">
+                        <a href="javascript:void(0);" onclick="showListView('[%= breadcrumb.path %]')">[%- breadcrumb.name %]</a>
+                        <span class="after-span"></span>
+                    </li>
+                    [% }); %]
+                    <li class="li_crumbs">
+                        <a href="javascript:void(0);" class="currentBreadcrumb">[%- context.currentBreadcrumbName %]</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="adInListingHolder"></div>
+            <table cellpadding="0" cellspacing="0" class="notranslate">
+                [% _(context.items).each(function(item, index) { %]
+                <tr class="[% if (index % 2 == 0) {%]bgRow[% } %]">
+                    <td class="leftColumn">
+                        [% if (item.type == 'Folder') { %]
+                        <div onclick="showListView('[%= item.path %]')">
+                            <span class="itemIcon[%-item.type%]"></span>
+                            <a href="javascript:void(0);" class="archiveListItemName">[%- item.name %]</a>
+                        </div>
+                        [% } else { %]
+                        <span class="itemIcon[%-item.type%]"></span>
+                        <a href="rest/online/download/[%= item.path %]" class="archiveListItemName" target="hiddenIframe"
+                           onclick="onDownload()">[%- item.name %]</a>
+                        [% } %]
+                    </td>
+                    <td class="rightColumn">
+                        [% if (item.type != 'Folder') { %]
+                        <a class="itemIconDownload" href="rest/online/download/[%= item.path %]" target="hiddenIframe"
+                           onclick="onDownload()"></a>
+                        [% if (item.imagePreview) { %]
+                        <a class="itemIconViewImage" rel="gallery" href="rest/online/preview/[%= item.path %]"
+                           target="_blank" title="View Image" data-title="[%- item.name %]"
+                           onclick="changePrev(event)"></a>
+                        [% } %]
+                        [% if (item.videoPreview) { %]
+                        <a class="itemIconPlay" rel="gallery" href="rest/online/preview/[%= item.path %]"
+                           target="_blank" title="Play" data-title="[%- item.name %]"
+                           onclick="onPreview('previewvideo')"></a>
+                        [% } %]
+                        [% if (item.audioPreview) { %]
+                        <a class="itemIconPlayAudio" href="rest/online/preview/[%= item.path %]"
+                           target="_blank" title="Play" data-title="[%- item.name %]"
+                           onclick="onPreview('previewaudio')"></a>
+                        [% } %]
+                        [% } %]
+                    </td>
+                    <td class="rightColumn">
+                        [% if (item.type != 'Folder') { %]
+                        <span title="[%- item.size %] bytes">[%- item.displaySize %]</span>
+                        [% } %]
+                    </td>
+                </tr>
+                [% }); %]
+            </table>
+            <ul class="innerContentOnlineStepsLinks">
+                <li class="floatLeft"><a href="javascript:void(0);" onclick="showSelectView()" class="listViewBackLink">Let's try another
+                    archive</a></li>
+                <li class="floatRight deleteFiles">All your files will be automatically deleted
+                    in a few minutes after<br/> you close this page.
+                    To remove them right now please <a href="javascript:void(0);" onclick="startDeletion()">click here</a>
+                </li>
+            </ul>
+                    </div>
+        </script>
+    </div>
+
+
+    <div id="cleanupView" style="display: none;" class="innerContentOnline left">
+        <script type="text/x-template">
+            <div class="innerContentOnlineSteps inner-gbh clear">
+                <ul>
+                    <li class="left">
+                        <div class="select-btn-file sel__f">
+                            <span class="on-main on_sf on_sf1"></span>
+                            <span class="select-txtf">Select archive</span>
+                        </div>
+                    </li>
+                    <li class="left extract-btn">
+                        <div class="on-main on_e"></div>
+                        <span class="select-txt-e">Extracting...</span>
+                    </li>
+                    <li class="left">
+                        <div class="file-btn-f">
+                            <span class="on-main on_ef on_ef1"></span>
+                            <span class="select-txt-extract">Your files</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            </div>
+            <div class="zebra article-download">
+                <div class="bg">
+                    [% if (context.deletionInProgress) { %]
+                    <span class="removingFilesMessage">Removing the files you uploaded...</span><br/><br/><br/><br/>
+                    [% } else if (context.deletionComplete) { %]
+                    <p style="margin: 65px 0 10px 0;"> All your files have been permanently deleted.</p>
+                    [% if (context.bookmarkShortcut) { %]
+                    <span>It's easy to find us next time if you add a bookmark ([%- context.bookmarkShortcut %]). </span>
+                    [% } else { %]
+                <span>It's easy to find us next time if you <a href="javascript:void(0);" title="B1 Online Archiver"
+                                                               onclick="addBookmark(this)"> add a bookmark</a>.</span>
+                    [% } %]
+                    [% } %]
+                    <ul class="innerContentOnlineStepsLinks" style="margin-top:98px;">
+                        <li class="floatLeft"><a href="javascript:void(0);" onclick="showSelectView()" class="listViewBackLink list__view">Let's try another archive</a></li>
+                        [% if (!context.deletionComplete) { %]
+                        <li class="floatRight deleteFiles">All your files will be automatically deleted<br/>
+                            in a few minutes after you close this page.<br/>
+                            To remove them right now please <a href="javascript:void(0);" onclick="startDeletion()">click here</a>
+                        </li>
+                        [% } %]
+                    </ul>
+                </div>
+            </div>
+        </script>
+    </div>
+
+        <div class="online-sidebar">
+            <div class="online-block">
+                <div class="online-header">
+                    <h1>B1 Online Archiver</h1>
+                    <h4>The simplest way to get files</h4>
+                </div>
+                <div class="online-row">
+                    <div class="row-butt" style="height: 200px;overflow: hidden;">
+                        <!-- BEGIN TAG - HEAD -->
+                        <script type="text/javascript">
+                            /*<![CDATA[*/
+                            if(!(window.EpmadsConfig && window.EpmadsConfig.ads)) window.EpmadsConfig = {ads:[]};
+                            EpmadsConfig.ads.push({
+                                epmads_key:"f525af1b24ef6635f608f340b3629137",
+                                epmads_channel: "",
+                                epmads_code_format:"ads-async.js",
+                                epmads_click:"",
+                                epmads_custom_params:{},
+                                epmads_target_id:"epmads-f525af1b24ef6635f608f340b3629137"
+                            });
+                            (function () {
+                                var sc = document.createElement("script");
+                                sc.type = "text/javascript";
+                                sc.async = true;
+                                sc.src = (location.protocol == "https:" ? "https:" : "http:") + "//www.multilinkhost.com\/js\/show_ads_epmads.js?pubId=27697";
+                                var s = document.getElementsByTagName("script")[0];
+                                s.parentNode.insertBefore(sc, s);
+                            })();
+                            /*]]>*/
+                        </script>
+                        <!-- END TAG - HEAD -->
+                        <!-- BEGIN TAG - BODY -->
+                        <div id="epmads-f525af1b24ef6635f608f340b3629137"></div>
+                        <!-- END TAG - BODY -->
+                    </div>
+                    <div class="row-butt">
+                        <div class="on-main online-ico"></div>
+                        <h1>Simple</h1>
+                        <p>Just a few clicks and it's done</p>
+                    </div>
+
+                    <div class="row-butt">
+                        <div class="on-main online-ico2"></div>
+                        <h1>Safe</h1>
+                        <p>Only you will see your files</p>
+                    </div>
+                    <div class="row-butt">
+                        <div class="on-main online-ico3"></div>
+                        <h1 class="last-h">Secure</h1>
+                        <p>All files will be completely deleted a few minutes after you close this page</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="clearfix"></div>
+        <div>
+</div>
+        <!--End extractView-->
+    </div>
+        <div class="inner_bottom"></div>
+    </div>
+<div class="butt-up toTop" id='Go_Top'></div>
+<footer>
+ <div class="footer">
+    <div class="footer_main">
+        <div class="information">
+            <div class="footer_block about">
+                <ul>
+                    <li class="htitle"><a href="/">About</a></li>
+                    <li><a  href="/features.jsp">Features</a>
+                    </li>
+                    <li><a href="/presscenter/ourstory.jsp">Press center</a></li>
+                    <li><a href="/screenshots.jsp" >Screenshots</a></li>
+                    <li><a  href="/translation.jsp">Translations</a>
+</ul>
+            </div>
+            <div class="footer_block donwload">
+                <ul>
+                    <li class="htitle "><a href="/download">Download</a></li>
+                    <li class="windows"><a href="/download-windows"><span></span>B1 Free Archiver for Windows</a></li>
+                    <li class="linux"><a href="/download-linux"><span></span>B1 Free Archiver for Linux</a></li>
+                    <li class="mac"><a href="/download-mac"><span></span>B1 Free Archiver for Mac</a></li>
+                    <li class="android"><a href="/download-android"><span></span>B1 Archiver for Android</a></li>
+                    <li class="android"><a href="/b1-file-manager.jsp"><span></span>B1 File Manager for Android</a></li>
+                </ul>
+            </div>
+<div class="footer_block like_block">
+                <ul>
+                    <li class="htitle">Follow Us</li>
+                    <li>
+                        <a rel="nofollow" href="https://www.facebook.com/b1archiver" target="_blank" class="like-back like-ff">
+                             <span class="sp-1m sp-2m followFacebook"></span>
+                        </a>
+                    </li>
+                    <li>
+</li>
+                    <li>
+</li>
+                </ul>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+
+        <div class="footer_search clear">
+            <div class="footer_bg left">
+                <div class="search_logo">
+                    <a href="/" class="b_logo"></a>
+                </div>
+                <div class="search_text">
+                    <p>Search</p>
+                </div>
+</div>
+            <div class="adward_button right">
+                <form action="/awards.jsp">
+                    <button class="adwards_button_n">
+                        <div class="adw"></div>
+                        <div class="adw_text">Awards <br /><span>and reviews</span></div>
+                        <div class="adw_rght"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="footer_help_border clear">
+            <div class="footer_help left">
+                <div class="footer_logo">
+                    <a href="/" class="ft_logo"></a>
+                </div>
+                    <div class="help_wrap">
+                        <p>Help</p>
+                        <span>(old version)</span>
+                    </div>
+                <div class="footer_wrap">
+                    <ul class="clear">
+                        <li><a class="notranslate" href="#">Ar</a></li>
+                        <li><a class="notranslate" href="#">Bg</a></li>
+                        <li><a class="notranslate" href="#">Cs</a></li>
+                        <li><a class="notranslate" href="#">Da</a></li>
+                        <li><a class="notranslate" href="#">De</a></li>
+                        <li><a class="notranslate" href="#">El</a></li>
+                        <li><a class="notranslate" href="#">En</a></li>
+                        <li><a class="notranslate" href="#">Es</a></li>
+                        <li><a class="notranslate" href="#">Et</a></li>
+                        <li><a class="notranslate" href="#">Fa</a></li>
+                        <li><a class="notranslate" href="#">Fr</a></li>
+                        <li><a class="notranslate" href="#">He</a></li>
+                        <li><a class="notranslate" href="#">Hu</a></li>
+                        <li><a class="notranslate" href="#">Id</a></li>
+                        <li><a class="notranslate" href="#">It</a></li>
+                        <li><a class="notranslate" href="#">Ja</a></li>
+                        <li><a class="notranslate" href="#">Ka</a></li>
+                        <li><a class="notranslate" href="#">Mk</a></li>
+                        <li><a class="notranslate" href="#">Ko</a></li>
+                        <li><a class="notranslate" href="#">Ms</a></li>
+                        <li><a class="notranslate" href="#">No</a></li>
+                        <li><a class="notranslate" href="#">Nl</a></li>
+                        <li><a class="notranslate" href="#">Pl</a></li>
+                        <li><a class="notranslate" href="#">Pt-Br</a></li>
+                        <li><a class="notranslate" href="#">Pt</a></li>
+                        <li><a class="notranslate" href="#">Ro</a></li>
+                        <li><a class="notranslate" href="#">Ru</a></li>
+                        <li><a class="notranslate" href="#">Sl</a></li>
+                        <li><a class="notranslate" href="#">Sr</a></li>
+                        <li><a class="notranslate" href="#">Sv</a></li>
+                        <li><a class="notranslate" href="#">Th</a></li>
+                        <li><a class="notranslate" href="#">Tr</a></li>
+                        <li><a class="notranslate" href="#">Uk</a></li>
+                        <li><a class="notranslate" href="#">Vi</a></li>
+                        <li><a class="notranslate" href="#">CN</a></li>
+                        <li><a class="notranslate" href="#">TW</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="help_button left">
+                <form action="/help/How-to-open-b1-archive-and-extract-files-from-b1-archive-in-one-click.jsp">
+                    <button class="help_button_n">
+                        <div class="what"></div>
+                        <div class="rght"></div>
+                        <span>Help</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="foo"></div>
+        <div class="clearfix"></div>
+    </div>
+</div>
+    <div class="footer_bottom"></div>
+    <div class="footer_bottom_block">
+        <div class="footer_distance">
+            <div class="copyright">
+                <p>Copyright ©2019 by B1 Group. All Rights Reserved</p>
+            </div>
+            <div class="support">
+                <nav>
+                    <ul>
+                        <li><a href="/eula.jsp">License Agreement</a></li>
+                        <li><a href="/policy.jsp">Privacy Policy</a></li>
+                        <li><a href="/uninstall.jsp">How to uninstall</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</footer>
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-27910806-1']);
+    _gaq.push(['_trackPageview']);
+    (function () {
+        var ga = document.createElement('script');
+        ga.type = 'text/javascript';
+        ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+<script type="text/javascript">
+    document.write("<img src='https://www.jscount.com/a/333/800dd892/z?ref=" +
+            escape(document.referrer) + "&url=" + escape(document.URL) + "&rand=" + Math.random() + "' width=1 height=1 alt='' style='display:none'>")</script></div>
+<!-- image preview image -->
+<div class="preview-wrapper" id="inter">
+    <div class="preview-content" id="image-box">
+        <button class="close" onclick="closePreview()"></button>
+    </div>
+</div>
+<!-- image preview -->
+<script>
+    function changePrev(e) {
+            e.preventDefault();
+            previewImg(e.target);
+    }
+    function previewImg(el) {
+        var inter = document.getElementById('inter');
+        var imageBox = document.getElementById('image-box');
+        var img = new Image();
+        img.onload = function () {
+            img.id = 'img-preview';
+            var d = img.height/img.width;
+            if (img.height > window.innerHeight) {
+                img.height = window.innerHeight*0.8;
+                img.width = img.height/d;
+            }
+            if (img.width > window.innerWidth){
+                img.width = window.innerWidth*0.8;
+                img.height = img.width*d;
+            }
+            imageBox.appendChild(img);
+            inter.style.display = 'block';
+
+            imageBox.style.height = img.height + "px";
+            imageBox.style.width = img.width + "px";
+            imageBox.style.marginTop = - img.height/2 + "px";
+
+            setTimeout(function () {
+                inter.style.opacity = 1;
+            },50);
+        };
+        img.src = el.href;
+    }
+
+    function closePreview() {
+        var inter = document.getElementById('inter')
+        var img = document.getElementById('img-preview');
+        inter.style.opacity = 0;
+        setTimeout(function () {
+            inter.style.display = 'none';
+            img.parentNode.removeChild(img);
+        },400);
+    }
+</script>
+</body>
+</html>
